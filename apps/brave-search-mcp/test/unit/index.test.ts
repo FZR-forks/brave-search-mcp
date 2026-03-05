@@ -28,22 +28,25 @@ async function importIndexModule() {
 describe('index entrypoint', () => {
   const originalArgv = [...process.argv];
   const originalApiKey = process.env.BRAVE_API_KEY;
+  const originalDisabledTools = process.env.DISABLED_TOOLS;
 
   beforeEach(() => {
     vi.clearAllMocks();
     vi.resetModules();
     process.argv = ['node', 'index.js'];
     process.env.BRAVE_API_KEY = 'test-api-key';
+    delete process.env.DISABLED_TOOLS;
 
     mockState.startServerMock.mockResolvedValue(undefined);
-    mockState.braveMcpServerMock.mockImplementation(function (this: { serverInstance: McpServer }, apiKey: string, isUI: boolean) {
-      this.serverInstance = { apiKey, isUI } as unknown as McpServer;
+    mockState.braveMcpServerMock.mockImplementation(function (this: { serverInstance: McpServer }, apiKey: string, isUI: boolean, _braveSearchInstance: unknown, disabledTools: Set<string>) {
+      this.serverInstance = { apiKey, isUI, disabledTools } as unknown as McpServer;
     });
   });
 
   afterEach(() => {
     process.argv = [...originalArgv];
     process.env.BRAVE_API_KEY = originalApiKey;
+    process.env.DISABLED_TOOLS = originalDisabledTools;
     vi.restoreAllMocks();
   });
 
@@ -64,11 +67,31 @@ describe('index entrypoint', () => {
     expect(capturedCreateServer).toBeTypeOf('function');
 
     const serverInstance = capturedCreateServer!();
-    expect(mockState.braveMcpServerMock).toHaveBeenCalledWith('test-api-key', true);
+    expect(mockState.braveMcpServerMock).toHaveBeenCalledWith('test-api-key', true, undefined, new Set());
     expect(serverInstance).toEqual({
       apiKey: 'test-api-key',
       isUI: true,
+      disabledTools: new Set(),
     });
+  });
+
+  it('passes DISABLED_TOOLS values to BraveMcpServer', async () => {
+    let capturedCreateServer: (() => McpServer) | undefined;
+    mockState.startServerMock.mockImplementation((createServer: () => McpServer) => {
+      capturedCreateServer = createServer;
+      return Promise.resolve();
+    });
+    process.env.DISABLED_TOOLS = 'brave_news_search, brave_local_search,, ';
+
+    await importIndexModule();
+    capturedCreateServer!();
+
+    expect(mockState.braveMcpServerMock).toHaveBeenCalledWith(
+      'test-api-key',
+      false,
+      undefined,
+      new Set(['brave_news_search', 'brave_local_search']),
+    );
   });
 
   it('logs and exits when BRAVE_API_KEY is missing', async () => {

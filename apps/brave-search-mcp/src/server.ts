@@ -30,17 +30,20 @@ export class BraveMcpServer {
   private newsSearchTool: BraveNewsSearchTool;
   private videoSearchTool: BraveVideoSearchTool;
   private llmContextSearchTool: BraveLLMContextSearchTool;
+  private disabledTools: Set<string>;
 
   /**
    * Creates a new BraveMcpServer instance.
    * @param braveSearchApiKey - The API key for Brave Search API
    * @param isUI - Whether to enable UI mode with widget resources
    * @param braveSearchInstance - Optional BraveSearch instance for dependency injection (useful for testing)
+   * @param disabledTools - Set of tool names to skip registering
    */
   constructor(
     private braveSearchApiKey: string,
     private isUI: boolean = false,
     braveSearchInstance?: BraveSearch,
+    disabledTools: ReadonlySet<string> = new Set(),
   ) {
     this.server = new McpServer(
       {
@@ -63,27 +66,51 @@ export class BraveMcpServer {
     this.newsSearchTool = new BraveNewsSearchTool(this, this.braveSearch, this.isUI);
     this.videoSearchTool = new BraveVideoSearchTool(this, this.braveSearch, this.isUI);
     this.llmContextSearchTool = new BraveLLMContextSearchTool(this, this.braveSearch, this.isUI);
+    this.disabledTools = new Set(disabledTools);
     this.setupTools();
   }
 
   private setupTools(): void {
+    const shouldRegisterImage = this.isToolEnabled(this.imageSearchTool.name);
+    const shouldRegisterNews = this.isToolEnabled(this.newsSearchTool.name);
+    const shouldRegisterVideo = this.isToolEnabled(this.videoSearchTool.name);
+    const shouldRegisterWeb = this.isToolEnabled(this.webSearchTool.name);
+    const shouldRegisterLocal = this.isToolEnabled(this.localSearchTool.name);
+    const shouldRegisterLlmContext = this.isToolEnabled(this.llmContextSearchTool.name);
+
     if (this.isUI) {
       // Dual-resource strategy: register BOTH MCP-APP and ChatGPT resources
-      this.setupDualResourceImageTools();
-      this.setupDualResourceNewsTools();
-      this.setupDualResourceVideoTools();
-      this.setupDualResourceWebTools();
-      this.setupDualResourceLocalTools();
-      this.setupLLMContextSearchTool();
+      if (shouldRegisterImage)
+        this.setupDualResourceImageTools();
+      if (shouldRegisterNews)
+        this.setupDualResourceNewsTools();
+      if (shouldRegisterVideo)
+        this.setupDualResourceVideoTools();
+      if (shouldRegisterWeb)
+        this.setupDualResourceWebTools();
+      if (shouldRegisterLocal)
+        this.setupDualResourceLocalTools();
+      if (shouldRegisterLlmContext)
+        this.setupLLMContextSearchTool();
     }
     else {
-      this.setupImageSearchTool();
-      this.setupNewsSearchTool();
-      this.setupVideoSearchTool();
-      this.setupWebSearchTool();
-      this.setupLocalSearchTool();
-      this.setupLLMContextSearchTool();
+      if (shouldRegisterImage)
+        this.setupImageSearchTool();
+      if (shouldRegisterNews)
+        this.setupNewsSearchTool();
+      if (shouldRegisterVideo)
+        this.setupVideoSearchTool();
+      if (shouldRegisterWeb)
+        this.setupWebSearchTool();
+      if (shouldRegisterLocal)
+        this.setupLocalSearchTool();
+      if (shouldRegisterLlmContext)
+        this.setupLLMContextSearchTool();
     }
+  }
+
+  private isToolEnabled(toolName: string): boolean {
+    return !this.disabledTools.has(toolName);
   }
 
   /**

@@ -193,4 +193,58 @@ describe('braveMcpServer', () => {
       }
     });
   });
+
+  describe('disabled tools', () => {
+    it('should not register disabled tools in non-UI mode', async () => {
+      const disabledTools = new Set(['brave_web_search', 'brave_llm_context_search']);
+      const filteredServer = new BraveMcpServer(
+        'fake-api-key',
+        false,
+        mockBraveSearch as unknown as BraveSearch,
+        disabledTools,
+      );
+      const { client, close } = await createConnectedClient(filteredServer);
+
+      try {
+        const toolList = await client.listTools();
+        const toolNames = toolList.tools.map(tool => tool.name);
+
+        expect(toolNames).toHaveLength(4);
+        expect(toolNames).not.toContain('brave_web_search');
+        expect(toolNames).not.toContain('brave_llm_context_search');
+      }
+      finally {
+        await close();
+      }
+    });
+
+    it('should not register UI resources for disabled UI tools', async () => {
+      const disabledTools = new Set(['brave_image_search']);
+      const filteredServer = new BraveMcpServer(
+        'fake-api-key',
+        true,
+        mockBraveSearch as unknown as BraveSearch,
+        disabledTools,
+      );
+      const { client, close } = await createConnectedClient(filteredServer);
+
+      try {
+        const [resourceList, toolList] = await Promise.all([
+          client.listResources(),
+          client.listTools(),
+        ]);
+        const resourceUris = resourceList.resources.map(resource => resource.uri);
+        const toolNames = toolList.tools.map(tool => tool.name);
+
+        expect(resourceUris).not.toContain(UI_RESOURCES.image.mcpApp);
+        expect(resourceUris).not.toContain(UI_RESOURCES.image.chatgpt);
+        expect(resourceUris).toHaveLength(ALL_UI_RESOURCE_URIS.length - 2);
+        expect(toolNames).not.toContain('brave_image_search');
+        expect(toolNames).toHaveLength(5);
+      }
+      finally {
+        await close();
+      }
+    });
+  });
 });
