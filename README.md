@@ -137,6 +137,8 @@ When running in HTTP mode, the following environment variables are supported:
 - `BRAVE_API_KEY` (required): Brave Search API key.
 - `PORT` (optional): HTTP port (default: `3001`).
 - `HOST` (optional): Interface to bind to (default: `0.0.0.0`).
+- `DISABLED_TOOLS` (optional): Comma-separated list of tool names to exclude from registration.
+  - Example: `DISABLED_TOOLS=brave_news_search,brave_local_search`
 - `ALLOWED_HOSTS` (optional): Comma-separated list of allowed hostnames for Host header validation.
   - Example: `ALLOWED_HOSTS=localhost,127.0.0.1,my-app.ngrok-free.app`
   - Use hostnames only (no scheme/path), e.g. `my-app.ngrok-free.app` not `https://my-app.ngrok-free.app/mcp`
@@ -145,7 +147,7 @@ Examples:
 
 ```bash
 # Local only
-HOST=127.0.0.1 ALLOWED_HOSTS=localhost,127.0.0.1 BRAVE_API_KEY="your_key_here" npx -y brave-search-mcp --http
+HOST=127.0.0.1 ALLOWED_HOSTS=localhost,127.0.0.1 DISABLED_TOOLS=brave_news_search BRAVE_API_KEY="your_key_here" npx -y brave-search-mcp --http
 ```
 
 ```bash
@@ -238,14 +240,33 @@ Replace `YOUR_API_KEY_HERE` with your actual Brave Search API key.
 
 #### Docker
 
-1. Clone the repo
-2. Docker build
+Docker images are built on every commit and pushed to GitHub Container Registry:
+
+- `ghcr.io/<owner>/brave-search-mcp:latest`
+- `ghcr.io/<owner>/brave-search-mcp:<branch-name>`
+- `ghcr.io/<owner>/brave-search-mcp:<commit-sha>`
+
+Replace `<owner>` with your GitHub organization or username.
+
+You can either use the published image directly or build locally from source.
+
+##### Use published image
 
 ```bash
-docker build -t brave-search-mcp:latest -f ./Dockerfile .
+docker run -i --rm -e BRAVE_API_KEY="your_key_here" ghcr.io/<owner>/brave-search-mcp:latest
 ```
 
-3. Add this to your `claude_desktop_config.json`:
+##### Build locally
+
+Run this command from the monorepo root:
+
+```bash
+docker build -t brave-search-mcp:latest -f apps/brave-search-mcp/Dockerfile .
+```
+
+##### Configure Claude Desktop with Docker
+
+Add this to your `claude_desktop_config.json`:
 
 ```json
 {
@@ -258,7 +279,7 @@ docker build -t brave-search-mcp:latest -f ./Dockerfile .
         "--rm",
         "-e",
         "BRAVE_API_KEY",
-        "brave-search-mcp"
+        "ghcr.io/<owner>/brave-search-mcp:latest"
       ],
       "env": {
         "BRAVE_API_KEY": "YOUR API KEY HERE"

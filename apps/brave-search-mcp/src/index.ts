@@ -12,8 +12,16 @@ function createServer(): McpServer {
     console.error('Error: BRAVE_API_KEY environment variable is required');
     process.exit(1);
   }
+
+  const disabledTools = new Set(
+    (process.env.DISABLED_TOOLS ?? '')
+      .split(',')
+      .map(toolName => toolName.trim())
+      .filter(Boolean),
+  );
+
   const isUI = process.argv.includes('--ui');
-  return new BraveMcpServer(BRAVE_API_KEY, isUI).serverInstance;
+  return new BraveMcpServer(BRAVE_API_KEY, isUI, undefined, disabledTools).serverInstance;
 }
 
 const http = process.argv.includes('--http');
