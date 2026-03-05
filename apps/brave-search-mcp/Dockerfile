@@ -5,15 +5,17 @@ WORKDIR /workspace
 # Must copy the monorepo because workspace dependencies are required during build.
 COPY . .
 
-RUN corepack enable \
-  && corepack pnpm install --frozen-lockfile \
-  && corepack pnpm -C apps/brave-search-mcp run build
+RUN corepack enable
+RUN corepack pnpm install --frozen-lockfile
+RUN corepack pnpm -C apps/brave-search-mcp run build
+# --legacy is required because this workspace does not use inject-workspace-packages.
+RUN corepack pnpm deploy --filter brave-search-mcp --prod --legacy /workspace/.deploy
 
 FROM node:23.11-alpine AS release
 
 WORKDIR /app
 
-COPY --from=builder /workspace/apps/brave-search-mcp/dist ./dist
+COPY --from=builder /workspace/.deploy/ ./
 
 ENV NODE_ENV=production
 

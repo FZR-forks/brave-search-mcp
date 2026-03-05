@@ -246,15 +246,19 @@ Docker images are built on every commit and pushed to GitHub Container Registry:
 - `ghcr.io/<owner>/brave-search-mcp:<branch-name>`
 - `ghcr.io/<owner>/brave-search-mcp:<commit-sha>`
 
+Replace `<owner>` with your GitHub organization or username.
+
 You can either use the published image directly or build locally from source.
 
 ##### Use published image
 
 ```bash
-docker run -i --rm -e BRAVE_API_KEY="your_key_here" ghcr.io/fzr-forks/brave-search-mcp:latest
+docker run -i --rm -e BRAVE_API_KEY="your_key_here" ghcr.io/<owner>/brave-search-mcp:latest
 ```
 
 ##### Build locally
+
+Run this command from the monorepo root:
 
 ```bash
 docker build -t brave-search-mcp:latest -f apps/brave-search-mcp/Dockerfile .
@@ -275,7 +279,7 @@ Add this to your `claude_desktop_config.json`:
         "--rm",
         "-e",
         "BRAVE_API_KEY",
-        "ghcr.io/fzr-forks/brave-search-mcp:latest"
+        "ghcr.io/<owner>/brave-search-mcp:latest"
       ],
       "env": {
         "BRAVE_API_KEY": "YOUR API KEY HERE"

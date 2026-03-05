@@ -94,6 +94,20 @@ describe('index entrypoint', () => {
     );
   });
 
+  it('ignores empty DISABLED_TOOLS entries', async () => {
+    let capturedCreateServer: (() => McpServer) | undefined;
+    mockState.startServerMock.mockImplementation((createServer: () => McpServer) => {
+      capturedCreateServer = createServer;
+      return Promise.resolve();
+    });
+    process.env.DISABLED_TOOLS = ' , , ';
+
+    await importIndexModule();
+    capturedCreateServer!();
+
+    expect(mockState.braveMcpServerMock).toHaveBeenCalledWith('test-api-key', false, undefined, new Set());
+  });
+
   it('logs and exits when BRAVE_API_KEY is missing', async () => {
     let capturedCreateServer: (() => McpServer) | undefined;
     mockState.startServerMock.mockImplementation((createServer: () => McpServer) => {

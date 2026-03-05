@@ -109,6 +109,10 @@ export class BraveMcpServer {
     }
   }
 
+  /**
+   * Checks whether a tool should be registered.
+   * @param toolName - MCP tool name
+   */
   private isToolEnabled(toolName: string): boolean {
     return !this.disabledTools.has(toolName);
   }
